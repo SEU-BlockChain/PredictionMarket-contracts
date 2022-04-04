@@ -34,19 +34,19 @@ contract AccountProxy {
         return publicAccounts.INITIAL_SUPPLY();
     }
 
-    function tokenOf(address _address) external view returns (uint){
-        return publicAccounts.tokenOf(_address);
+    function balanceOf(address _address) external view returns (uint){
+        return publicAccounts.balanceOf(_address);
     }
 
-    function totalToken() external view returns (uint){
-        return publicAccounts.totalToken();
+    function totalSupply() external view returns (uint){
+        return publicAccounts.totalSupply();
     }
 
     function isFrozen(address _address) external view returns (uint){
         return publicAccounts.isFrozen(_address);
     }
 
-    function transferToken(address _to, uint _value) public {
+    function transfer(address _to, uint _value) public {
         publicAccounts.transfer(msg.sender, _to, _value);
         emit TransferEvent(msg.sender, _to, _value);
     }
@@ -93,8 +93,8 @@ contract PredictionMarket is AccountProxy {
         info = topics[i];
     }
 
-    function CreateBinaryPrediction(uint _topicId, PredictionInfo calldata _info, string[] calldata _desc) external {
-        BinaryPrediction p = new BinaryPrediction(msg.sender, privateAccounts, _info, _desc);
+    function CreateBinaryPrediction(uint _topicId, PredictionInfo calldata _info, string[2] calldata _desc) external {
+        BinaryPrediction p = new BinaryPrediction(msg.sender, privateAccounts, topics[_topicId].title, _info, _desc);
         topics[_topicId].predictions.push(address(p));
         emit CreateBinaryPredictionEvent(msg.sender, address(p), _info.desc);
     }

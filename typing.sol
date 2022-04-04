@@ -11,9 +11,9 @@ interface PublicAccounts {
 
     function INITIAL_SUPPLY() external view returns (uint);
 
-    function tokenOf(address) external view returns (uint);
+    function balanceOf(address) external view returns (uint);
 
-    function totalToken() external view returns (uint);
+    function totalSupply() external view returns (uint);
 
     function isFrozen(address) external view returns (uint);
 
@@ -35,6 +35,7 @@ interface PrivateAccounts is PublicAccounts {
         uint start;
         uint end;
         string desc;
+        string icon;
     }
 
 contract BasePrediction {
@@ -44,34 +45,53 @@ contract BasePrediction {
     bool public settled;
 
     modifier active{
-        require(info.start < block.timestamp, "4");
-        require(info.end > block.timestamp, "5");
-        require(settled == false);
+        require(info.start < block.timestamp, "prediction unopened");
+        require(info.end > block.timestamp, "prediction closed");
+        _;
+    }
+
+    modifier hasOpened{
+        require(info.start < block.timestamp, "prediction unopened");
+        _;
+    }
+
+    modifier notOpened{
+        require(info.start > block.timestamp, "prediction opened");
+        _;
+    }
+
+    modifier hasClosed{
+        require(info.end < block.timestamp, "prediction unclosed");
         _;
     }
 
     modifier notClosed{
-        require(info.end > block.timestamp, "6");
+        require(info.end > block.timestamp, "prediction closed");
         _;
     }
 
-    modifier closed{
-        require(info.end < block.timestamp, "6");
+    modifier hasSettled{
+        require(settled == true, "prediction unsettled");
+        _;
+    }
+
+    modifier notSettled{
+        require(settled == false, "prediction settled");
         _;
     }
 
     modifier ownerOnly{
-        require(msg.sender == owner, "6");
+        require(msg.sender == owner, "owner only");
         _;
     }
 
-    modifier shareLimt(uint share){
-        require(share >= 100);
+    modifier shareLimit(uint share){
+        require(share >= 100, "at least 100");
         _;
     }
 
-    modifier amountLimt(uint amount){
-        require(amount >= 100);
+    modifier amountLimit(uint amount){
+        require(amount >= 100, "at least 100");
         _;
     }
 }
