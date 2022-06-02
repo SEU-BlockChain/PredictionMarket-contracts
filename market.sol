@@ -18,51 +18,61 @@ contract AccountProxy {
         _;
     }
 
-    function admin() public view returns (address){
+    function admin() 
+    public view returns (address){
         return publicAccounts.admin();
     }
 
-    function name() external view returns (string memory){
+    function name() 
+    external view returns (string memory){
         return publicAccounts.name();
     }
 
-    function symbol() external view returns (string memory){
+    function symbol() 
+    external view returns (string memory){
         return publicAccounts.symbol();
     }
 
-    function INITIAL_SUPPLY() external view returns (uint){
+    function INITIAL_SUPPLY() 
+    external view returns (uint){
         return publicAccounts.INITIAL_SUPPLY();
     }
 
-    function balanceOf(address _address) external view returns (uint){
+    function balanceOf(address _address) 
+    external view returns (uint){
         return publicAccounts.balanceOf(_address);
     }
 
-    function totalSupply() external view returns (uint){
+    function totalSupply() 
+    external view returns (uint){
         return publicAccounts.totalSupply();
     }
 
-    function isFrozen(address _address) external view returns (uint){
+    function isFrozen(address _address) 
+    external view returns (uint){
         return publicAccounts.isFrozen(_address);
     }
 
-    function transfer(address _to, uint _value) public {
+    function transfer(address _to, uint _value) 
+    public {
         publicAccounts.transfer(msg.sender, _to, _value);
         emit TransferEvent(msg.sender, _to, _value);
     }
 
-    function burnToken(uint _value) public {
+    function burnToken(uint _value) 
+    public {
         publicAccounts.burn(msg.sender, _value);
         emit BurnEvent(msg.sender, _value);
     }
 
-    function frozeAccount(address _address, uint timestamp) public adminOnly {
+    function frozeAccount(address _address, uint timestamp) 
+    public adminOnly {
         publicAccounts.froze(_address, timestamp);
         emit FrozeEvent(_address, timestamp);
     }
 }
 
-contract PredictionMarket is AccountProxy {
+contract PredictionMarket is AccountProxy,BaseModifier {
     struct Topic {
         address owner;
         string title;
@@ -82,19 +92,22 @@ contract PredictionMarket is AccountProxy {
         publicAccounts = PublicAccounts(_address);
     }
 
-    function createTopic(string memory title, string memory icon) external {
+    function createTopic(string memory title, string memory icon) 
+    external {
         address[] memory empty;
         topics.push(Topic(msg.sender, title, icon, empty, block.timestamp));
         topicNum++;
         emit CreateTopicEvent(msg.sender, title);
     }
 
-    function topicInfo(uint i) external view returns (Topic memory info){
+    function topicInfo(uint i) 
+    external view returns (Topic memory info){
         info = topics[i];
     }
 
-    function CreateBinaryPrediction(uint _topicId, PredictionInfo calldata _info, string[2] calldata _desc) external {
-        BinaryPrediction p = new BinaryPrediction(msg.sender, privateAccounts, topics[_topicId].title, _info, _desc);
+    function CreateBinaryPrediction(uint _topicId, uint _init_amount,PredictionInfo calldata _info, string[] calldata _options)
+    external tokenEnough(privateAccounts,msg.sender,_init_amount){
+        BinaryPrediction p = new BinaryPrediction(msg.sender, _init_amount,privateAccounts, topics[_topicId].title, _info, _options);
         topics[_topicId].predictions.push(address(p));
         emit CreateBinaryPredictionEvent(msg.sender, address(p), _info.desc);
     }

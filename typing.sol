@@ -30,21 +30,41 @@ interface PrivateAccounts is PublicAccounts {
     function decreaseToken(address, uint) external;
 }
 
-
-    struct PredictionInfo {
-        uint start;
-        uint end;
-        string desc;
-        string icon;
+contract BaseModifier{
+    modifier positive(uint _value){
+        require(_value>0,"need positive value");
+        _;
     }
+
+    modifier active(PrivateAccounts _accounts,address _address){
+        uint timestamp = _accounts.isFrozen(_address);
+        if (timestamp != 0) {
+            require(timestamp <= block.timestamp, "account banned");
+        }
+        _;
+    }
+
+    modifier tokenEnough(PrivateAccounts _accounts,address _address, uint _value){
+        require(_value>0,"need positive value");
+        require(_accounts.balanceOf(_address) >= _value, "no enough token");
+        uint timestamp = _accounts.isFrozen(_address);
+        if (timestamp != 0) {
+            require(timestamp <= block.timestamp, "account banned");
+        }
+        _;
+    }
+}
 
 contract BasePrediction {
     PredictionInfo public info;
     PrivateAccounts accounts;
+
     address public owner;
     bool public settled;
+    uint init_amount;
+    uint option_num;
 
-    modifier active{
+    modifier activated{
         require(info.start < block.timestamp, "prediction unopened");
         require(info.end > block.timestamp, "prediction closed");
         _;
@@ -85,13 +105,16 @@ contract BasePrediction {
         _;
     }
 
-    modifier shareLimit(uint share){
-        require(share >= 100, "at least 100");
-        _;
-    }
-
-    modifier amountLimit(uint amount){
-        require(amount >= 100, "at least 100");
+    modifier notOwner{
+        require(msg.sender != owner, "not owner");
         _;
     }
 }
+
+struct PredictionInfo {
+    uint start;
+    uint end;
+    string desc;
+    string icon;
+}
+
