@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity >=0.7.0 <0.9.0;
+import "typing/interface.sol";
+import "typing/type.sol";
 
-import "./typing.sol";
-import "./binary_prediction.sol";
+pragma solidity >=0.7.0 <0.9.0;
 
 contract AccountProxy {
     PrivateAccounts privateAccounts;
@@ -72,43 +72,15 @@ contract AccountProxy {
     }
 }
 
-contract PredictionMarket is AccountProxy,BaseModifier {
-    struct Topic {
-        address owner;
-        string title;
-        string icon;
-        address[] predictions;
-        uint startTime;
-    }
+contract IssueProxy{
+    Issues issues;
 
-    uint public topicNum;
-    Topic[] topics;
+}
 
-    event CreateTopicEvent(address indexed owner, string indexed title);
-    event CreateBinaryPredictionEvent(address indexed owner, address indexed p, string indexed desc);
-
-    constructor(address _address){
-        privateAccounts = PrivateAccounts(_address);
-        publicAccounts = PublicAccounts(_address);
-    }
-
-    function createTopic(string memory title, string memory icon) 
-    external {
-        address[] memory empty;
-        topics.push(Topic(msg.sender, title, icon, empty, block.timestamp));
-        topicNum++;
-        emit CreateTopicEvent(msg.sender, title);
-    }
-
-    function topicInfo(uint i) 
-    external view returns (Topic memory info){
-        info = topics[i];
-    }
-
-    function CreateBinaryPrediction(uint _topicId, uint _init_amount,PredictionInfo calldata _info, string[] calldata _options)
-    external tokenEnough(privateAccounts,msg.sender,_init_amount){
-        BinaryPrediction p = new BinaryPrediction(msg.sender, _init_amount,privateAccounts, topics[_topicId].title, _info, _options);
-        topics[_topicId].predictions.push(address(p));
-        emit CreateBinaryPredictionEvent(msg.sender, address(p), _info.desc);
+contract PredictionMarket is AccountProxy,IssueProxy {
+    constructor(address _account_address,address _issues_address){
+        privateAccounts = PrivateAccounts(_account_address);
+        publicAccounts = PublicAccounts(_account_address);
+        issues=Issues(_issues_address);
     }
 }

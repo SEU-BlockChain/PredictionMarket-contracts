@@ -1,0 +1,53 @@
+{
+	"compiler": {
+		"version": "0.8.7+commit.e28d00a7"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"market.sol": "Market"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"market.sol": {
+			"keccak256": "0x29f31917c50f8a6013e2ee976a864823fb75513fac11ee87da5fba1083b2a4c8",
+			"license": "GPL-3.0",
+			"urls": [
+				"bzz-raw://15f955854beb61c1e4a8459a304b53ca48f9b5d4d2a9968243ec64dd1fc5c111",
+				"dweb:/ipfs/QmaA8A5y8HmRhmdhWqEzMopPsxkQJzDQwV4TEgUiigrJwa"
+			]
+		},
+		"typing/interface.sol": {
+			"keccak256": "0x3c824d17d9c3f2280188e53b33056132582e703977bff410d42d2b38801be1ab",
+			"license": "GPL-3.0",
+			"urls": [
+				"bzz-raw://d8b9c1e1dbe32221d2da94e7f12a7232e6df37c8ad533bf44a03643f75499f8d",
+				"dweb:/ipfs/QmQhQTMKQvH8MCzMUx6brucxSRoUC5XiYQNs2XJG1f2A1S"
+			]
+		}
+	},
+	"version": 1
+}

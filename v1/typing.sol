@@ -61,8 +61,8 @@ contract BasePrediction {
 
     address public owner;
     bool public settled;
-    uint init_amount;
-    uint option_num;
+    uint public init_amount;
+    uint public option_num;
 
     modifier activated{
         require(info.start < block.timestamp, "prediction unopened");

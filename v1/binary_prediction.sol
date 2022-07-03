@@ -29,8 +29,7 @@ contract BinaryPrediction is BasePrediction,BaseModifier {
     event LongOptionEvent(address indexed user, uint indexed optionId, uint amount, uint share);
     event ShortOptionEvent(address indexed user, uint indexed optionId, uint amount, uint share);
     event LongPoolEvent(address indexed user, uint amount);
-    event ShortPoolEvent(address indexed user, uint amount);
-    event ShareChangeEvent(uint timestamp, uint option0, uint option1);
+    event ShareChangeEvent(uint timestamp, uint optionId, uint share);
 
     constructor(address _owner,uint _init_amount, PrivateAccounts _accounts, string memory _topic, PredictionInfo memory _info, string[] memory _options){
         owner = _owner;
@@ -46,9 +45,12 @@ contract BinaryPrediction is BasePrediction,BaseModifier {
             options.push(BinaryOption(init_amount, _options[i]));
         }
 
-        accounts.decreaseToken(_owner, init_amount);
-        poolOf[_owner]+=init_amount;
-        totalPool += init_amount;
+        accounts.decreaseToken(_owner, _init_amount);
+
+        poolOfMapping[_owner] = true;
+        poolOfSlice.push(_owner);
+        poolOf[_owner]+=_init_amount*2;
+        totalPool += _init_amount*2;
     }
 
     modifier shareEnough(uint _optionId, uint _share){
@@ -63,7 +65,7 @@ contract BinaryPrediction is BasePrediction,BaseModifier {
 
     function utility(uint x,uint V,uint p_e2)
     internal pure returns(uint U){
-        U=x-V+100*V*V/((100-p_e2)*x+100*V);
+        U=x+100*V*V/((100-p_e2)*x+100*V)-V;
     }
 
     function _allocate(uint _optionId, uint _share) 
@@ -79,7 +81,7 @@ contract BinaryPrediction is BasePrediction,BaseModifier {
     }
 
     function _withdraw(uint _optionId, uint _share) 
-    internal view shareEnough(_optionId,_share) returns (uint _amount,uint _equity){
+    internal view returns (uint _amount,uint _equity){
         uint sender_share=shareOf[msg.sender][_optionId];
         uint p_e2=100*(options[_optionId].share-sender_share)/(totalShare-sender_share);
         uint V=totalPool*option_num+totalShare/option_num;
@@ -97,28 +99,84 @@ contract BinaryPrediction is BasePrediction,BaseModifier {
     }
 
     function shortOptionEstimate(uint _optionId, uint _share) 
-    external view activated positive(_share) returns(uint _amount,uint _equity){
+    external view activated positive(_share)  shareEnough(_optionId,_share) returns(uint _amount,uint _equity){
         (_amount,_equity)=_withdraw(_optionId,_share);
-        require(_amount>0,"share to small");
+        require(_amount>_equity,"share to small");
+    }
+
+    function longOption(uint _optionId, uint _share) 
+    external activated{
+        uint _amount;
+        uint _equity;
+        (_amount,_equity)=_allocate(_optionId,_share);
+        require(_amount<=accounts.balanceOf(msg.sender),"no enough token");
+        
+        accounts.decreaseToken(msg.sender, _amount);
+        
+        shareOf[msg.sender][_optionId] += _share;
+        totalShare += _share;
+        options[_optionId].share += _share;
+        equity += _equity;
+
+        emit LongOptionEvent(msg.sender, _optionId, _amount, _share);
+        emit ShareChangeEvent(block.timestamp, _optionId, options[_optionId].share);
+
+        if (!shareOfMapping[msg.sender]) {
+            shareOfMapping[msg.sender] = true;
+            shareOfSlice.push(msg.sender);
+        }
+    }
+
+    function shortOption(uint _optionId, uint _share) 
+    external activated shareEnough(_optionId, _share) {
+        uint _amount;
+        uint _equity;
+        (_amount,_equity)=_withdraw(_optionId,_share);
+
+        accounts.increaseToken(msg.sender, _amount);
+
+        shareOf[msg.sender][_optionId] -= _share;
+        totalShare -= _share;
+        options[_optionId].share -= _share;
+        equity += _equity;
+
+        emit ShortOptionEvent(msg.sender, _optionId, _amount, _share);
+        emit ShareChangeEvent(block.timestamp, _optionId, options[_optionId].share);
     }
 
     function longPool(uint _amount) 
-    external activated {
-        accounts.decreaseToken(msg.sender, _amount);
+    external activated tokenEnough(accounts, msg.sender,_amount){
+        accounts.decreaseToken(msg.sender,_amount);
         totalPool += _amount;
         poolOf[msg.sender] += _amount;
+
+        emit LongPoolEvent(msg.sender, _amount);
+        
         if (!poolOfMapping[msg.sender]) {
             poolOfMapping[msg.sender] = true;
             poolOfSlice.push(msg.sender);
         }
-        emit LongPoolEvent(msg.sender, _amount);
     }
 
-    function shortPool(uint _amount) 
-    external activated poolEnough(_amount) {
-        accounts.increaseToken(msg.sender, _amount);
-        totalPool -= _amount;
-        poolOf[msg.sender] -= _amount;
-        emit ShortPoolEvent(msg.sender, _amount);
+    function TEST_settle()
+    external{
+        settled=!settled;
+    }
+
+    function _settle(uint _optionId) external{
+        for (uint i = 0; i < shareOfSlice.length; i++) {
+            address shareHolder = shareOfSlice[i];
+            accounts.increaseToken(shareHolder, shareOf[shareHolder][_optionId]);
+        }
+        for (uint i = 0; i < poolOfSlice.length; i++) {
+            address poolHolder = poolOfSlice[i];
+            uint pool = poolOf[poolHolder];
+            uint income = pool + equity * pool / totalPool;
+            if(poolHolder==owner){
+                income-=init_amount;
+            }
+            accounts.increaseToken(poolHolder, income);
+        }
+        settled = true;
     }
 }
