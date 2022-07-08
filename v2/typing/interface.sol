@@ -2,7 +2,7 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
-interface PublicAccounts {
+interface PublicAccountManager {
     function admin() external view returns (address);
 
     function name() external view returns (string calldata);
@@ -21,36 +21,15 @@ interface PublicAccounts {
 
     function burn(address, uint) external;
 
-    function froze(address, uint) external;
+    function freeze(address, uint) external;
 }
 
-interface PrivateAccounts is PublicAccounts {
+interface PrivateAccountManager is PublicAccountManager {
     function increaseToken(address, uint) external;
 
     function decreaseToken(address, uint) external;
 }
 
-contract BaseModifier{
-    modifier positive(uint _value){
-        require(_value>0,"need positive value");
-        _;
-    }
-
-    modifier active(PrivateAccounts _accounts,address _address){
-        uint timestamp = _accounts.isFrozen(_address);
-        if (timestamp != 0) {
-            require(timestamp <= block.timestamp, "account banned");
-        }
-        _;
-    }
-
-    modifier tokenEnough(PrivateAccounts _accounts,address _address, uint _value){
-        require(_value>0,"need positive value");
-        require(_accounts.balanceOf(_address) >= _value, "no enough token");
-        uint timestamp = _accounts.isFrozen(_address);
-        if (timestamp != 0) {
-            require(timestamp <= block.timestamp, "account banned");
-        }
-        _;
-    }
+interface PrivateIssueManager{
+    
 }

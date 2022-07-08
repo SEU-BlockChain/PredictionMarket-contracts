@@ -2,8 +2,6 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
-pragma solidity >=0.7.0 <0.9.0;
-
 contract PredictionToken {
     address public admin;
     string public name = "PredictionToken";
@@ -14,10 +12,14 @@ contract PredictionToken {
     uint public totalSupply;
     mapping(address => uint) public isFrozen;
 
-    constructor(){
+    event TransferEvent(address indexed _from, address indexed _to, uint256 _value);
+    event BurnEvent(address indexed _address, uint256 _value);
+    event FreezeEvent(address indexed _address, uint _timestamp);
+
+    constructor(address _admin){
         totalSupply = INITIAL_SUPPLY;
-        admin = msg.sender;
-        balanceOf[msg.sender] = INITIAL_SUPPLY;
+        admin = _admin;
+        balanceOf[_admin] = INITIAL_SUPPLY;
     }
 
     modifier positive(uint _value){
@@ -51,17 +53,20 @@ contract PredictionToken {
     external active(_to) tokenEnough(_from, _value) {
         balanceOf[_from] -= _value;
         balanceOf[_to] += _value;
+        emit TransferEvent(_from, _to, _value);
     }
 
     function burn(address _address, uint _value)
     external tokenEnough(_address, _value) {
         balanceOf[_address] -= _value;
         totalSupply -= _value;
+        emit BurnEvent(_address, _value);
     }
 
-    function froze(address _address, uint _timestamp)
+    function freeze(address _address, uint _timestamp)
     external adminOnly {
         isFrozen[_address] = _timestamp;
+        emit FreezeEvent(_address, _timestamp);
     }
 
     function increaseToken(address _address, uint _value)

@@ -1,86 +1,142 @@
 // SPDX-License-Identifier: GPL-3.0
 
-import "typing/interface.sol";
-import "typing/type.sol";
+import "../typing/interface.sol";
+import "../typing/library.sol";
+import "../lib/token.sol";
 
 pragma solidity >=0.7.0 <0.9.0;
 
-contract AccountProxy {
-    PrivateAccounts privateAccounts;
-    PublicAccounts public publicAccounts;
+contract PredictionMarket {
+    using MarketLib for mapping(address=>MarketLib.T);
+    using TopicLib for TopicLib.T[];
+    using IssueLib for IssueLib.T;
 
-    event TransferEvent(address indexed _from, address indexed _to, uint256 _value);
-    event BurnEvent(address indexed _address, uint256 _value);
-    event FrozeEvent(address indexed _address, uint _timestamp);
+    mapping(address=>MarketLib.T) public market;
+    TopicLib.T[] public topic;
+    IssueLib.T public issue;
+
+    PublicAccountManager public account;
+
+    // constructor(address _account_address){
+    //     account = PublicAccountManager(_account_address);
+    // }
+    constructor(){
+        PredictionToken p= new PredictionToken(msg.sender);
+        account = PublicAccountManager(address(p));
+
+        issue.init();
+    }
 
     modifier adminOnly{
-        require(msg.sender == admin());
+        require(msg.sender == admin(),"admin only");
         _;
     }
 
-    function admin() 
+    function admin()
     public view returns (address){
-        return publicAccounts.admin();
+        return account.admin();
     }
 
-    function name() 
+    function name()
     external view returns (string memory){
-        return publicAccounts.name();
+        return account.name();
     }
 
-    function symbol() 
+    function symbol()
     external view returns (string memory){
-        return publicAccounts.symbol();
+        return account.symbol();
     }
 
-    function INITIAL_SUPPLY() 
+    function INITIAL_SUPPLY()
     external view returns (uint){
-        return publicAccounts.INITIAL_SUPPLY();
+        return account.INITIAL_SUPPLY();
     }
 
-    function balanceOf(address _address) 
+    function balanceOf(address _address)
     external view returns (uint){
-        return publicAccounts.balanceOf(_address);
+        return account.balanceOf(_address);
     }
 
-    function totalSupply() 
+    function totalSupply()
     external view returns (uint){
-        return publicAccounts.totalSupply();
+        return account.totalSupply();
     }
 
-    function isFrozen(address _address) 
+    function isFrozen(address _address)
     external view returns (uint){
-        return publicAccounts.isFrozen(_address);
+        return account.isFrozen(_address);
     }
 
-    function transfer(address _to, uint _value) 
+    function transfer(address _to, uint _value)
     public {
-        publicAccounts.transfer(msg.sender, _to, _value);
-        emit TransferEvent(msg.sender, _to, _value);
+        account.transfer(msg.sender, _to, _value);
     }
 
-    function burnToken(uint _value) 
+    function burnToken(uint _value)
     public {
-        publicAccounts.burn(msg.sender, _value);
-        emit BurnEvent(msg.sender, _value);
+        account.burn(msg.sender, _value);
     }
 
-    function frozeAccount(address _address, uint timestamp) 
+    function freezeAccount(address _address, uint _timestamp)
     public adminOnly {
-        publicAccounts.froze(_address, timestamp);
-        emit FrozeEvent(_address, timestamp);
+        account.freeze(_address, _timestamp);
     }
-}
 
-contract IssueProxy{
-    Issues issues;
-
-}
-
-contract PredictionMarket is AccountProxy,IssueProxy {
-    constructor(address _account_address,address _issues_address){
-        privateAccounts = PrivateAccounts(_account_address);
-        publicAccounts = PublicAccounts(_account_address);
-        issues=Issues(_issues_address);
+    function createTopic(string calldata _topic,string calldata _icon)
+    public{
+        topic.append(_topic,_icon);
     }
+
+    function getTopicRange(uint _start)
+    public view returns(TopicLib.T[10] memory){
+        return topic.range(_start);
+    }
+
+    function freezeTopic(uint _index)
+    public adminOnly{
+        topic.freeze(_index);
+    }
+
+    
+    function thawTopic(uint _index)
+    public adminOnly{
+        topic.thaw(_index);
+    }
+
+    function createMarket(address _market,string calldata _name)
+    public adminOnly{
+        market.create(_market,_name);
+    }
+
+    function openMarket(address _market)
+    public adminOnly{
+        market.open(_market);
+    }
+    
+    function closeMarket(address _market)
+    public adminOnly{
+        market.close(_market);
+    }
+
+    function freezeMarket(address _market)
+    public adminOnly{
+        market.freeze(_market);
+    }
+
+    function thawMarket(address _market)
+    public adminOnly{
+        market.thaw(_market);
+    }
+
+    function hasMarket(address _market)
+    public view returns(bool){
+        return market[_market].is_open&&market[_market].is_active;
+    }
+
+    function initIssue(address _issue)
+    public{
+        require(hasMarket(msg.sender),"invalid creator");
+        issue.valid[_issue]=true;
+    }
+
 }
