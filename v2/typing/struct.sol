@@ -2,8 +2,8 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
-struct BinaryPredictionInfoV1{
-    uint init_ammount;
+struct BasePredictionInfo{
+    uint init_amount;
     uint topic;
     uint start;
     uint end;
