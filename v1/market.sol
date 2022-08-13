@@ -18,71 +18,63 @@ contract AccountProxy {
         _;
     }
 
-    function admin() 
+    function admin()
     public view returns (address){
         return publicAccounts.admin();
     }
 
-    function name() 
+    function name()
     external view returns (string memory){
         return publicAccounts.name();
     }
 
-    function symbol() 
+    function symbol()
     external view returns (string memory){
         return publicAccounts.symbol();
     }
 
-    function INITIAL_SUPPLY() 
+    function INITIAL_SUPPLY()
     external view returns (uint){
         return publicAccounts.INITIAL_SUPPLY();
     }
 
-    function balanceOf(address _address) 
+    function balanceOf(address _address)
     external view returns (uint){
         return publicAccounts.balanceOf(_address);
     }
 
-    function totalSupply() 
+    function totalSupply()
     external view returns (uint){
         return publicAccounts.totalSupply();
     }
 
-    function isFrozen(address _address) 
+    function isFrozen(address _address)
     external view returns (uint){
         return publicAccounts.isFrozen(_address);
     }
 
-    function transfer(address _to, uint _value) 
+    function transfer(address _to, uint _value)
     public {
         publicAccounts.transfer(msg.sender, _to, _value);
         emit TransferEvent(msg.sender, _to, _value);
     }
 
-    function burnToken(uint _value) 
+    function burnToken(uint _value)
     public {
         publicAccounts.burn(msg.sender, _value);
         emit BurnEvent(msg.sender, _value);
     }
 
-    function frozeAccount(address _address, uint timestamp) 
+    function frozeAccount(address _address, uint timestamp)
     public adminOnly {
         publicAccounts.froze(_address, timestamp);
         emit FrozeEvent(_address, timestamp);
     }
 }
 
-contract PredictionMarket is AccountProxy,BaseModifier {
-    struct Topic {
-        address owner;
-        string title;
-        string icon;
-        address[] predictions;
-        uint startTime;
-    }
-
-    uint public topicNum;
-    Topic[] topics;
+contract PredictionMarket is AccountProxy, BaseModifier {
+    address[] public predictions;
+    uint public total=0;
 
     event CreateTopicEvent(address indexed owner, string indexed title);
     event CreateBinaryPredictionEvent(address indexed owner, address indexed p, string indexed desc);
@@ -92,23 +84,22 @@ contract PredictionMarket is AccountProxy,BaseModifier {
         publicAccounts = PublicAccounts(_address);
     }
 
-    function createTopic(string memory title, string memory icon) 
-    external {
-        address[] memory empty;
-        topics.push(Topic(msg.sender, title, icon, empty, block.timestamp));
-        topicNum++;
-        emit CreateTopicEvent(msg.sender, title);
-    }
 
-    function topicInfo(uint i) 
-    external view returns (Topic memory info){
-        info = topics[i];
-    }
-
-    function createBinaryPrediction(uint _topicId, uint _init_amount,PredictionInfo calldata _info, string[] calldata _options)
-    external tokenEnough(privateAccounts,msg.sender,_init_amount){
-        BinaryPrediction p = new BinaryPrediction(msg.sender, _init_amount,privateAccounts, topics[_topicId].title, _info, _options);
-        topics[_topicId].predictions.push(address(p));
+    function createBinaryPrediction(uint _init_amount, PredictionInfo calldata _info, string[] calldata _options)
+    external tokenEnough(privateAccounts, msg.sender, _init_amount) {
+        BinaryPrediction p = new BinaryPrediction(msg.sender, _init_amount, privateAccounts, _info, _options);
+        predictions.push(address(p));
+        total++;
         emit CreateBinaryPredictionEvent(msg.sender, address(p), _info.desc);
+    }
+
+    function getRange(uint page)
+    external view positive(page) returns(address[10] memory _predictions) {
+        uint start=(page-1)*10;
+        for(uint i=0;i<10;i++){
+            if(i+start<total){
+                _predictions[i]=predictions[start+i];
+            }
+        }
     }
 }

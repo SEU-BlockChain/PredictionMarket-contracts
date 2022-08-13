@@ -5,8 +5,6 @@ pragma solidity >=0.7.0 <0.9.0;
 import "./typing.sol";
 
 contract BinaryPrediction is BasePrediction,BaseModifier {
-    string topic;
-
     struct BinaryOption {
         uint share;
         string desc;
@@ -25,17 +23,17 @@ contract BinaryPrediction is BasePrediction,BaseModifier {
     uint public totalPool;
 
     uint public equity;
+    uint public correct;
 
     event LongOptionEvent(address indexed user, uint indexed optionId, uint amount, uint share);
     event ShortOptionEvent(address indexed user, uint indexed optionId, uint amount, uint share);
     event LongPoolEvent(address indexed user, uint amount);
     event ShareChangeEvent(uint timestamp, uint optionId, uint share);
 
-    constructor(address _owner,uint _init_amount, PrivateAccounts _accounts, string memory _topic, PredictionInfo memory _info, string[] memory _options){
+    constructor(address _owner,uint _init_amount, PrivateAccounts _accounts, PredictionInfo memory _info, string[] memory _options){
         owner = _owner;
         init_amount=_init_amount;
         accounts = _accounts;
-        topic = _topic;
         info = _info;
 
         option_num=_options.length;
@@ -158,12 +156,9 @@ contract BinaryPrediction is BasePrediction,BaseModifier {
         }
     }
 
-    function TEST_settle()
-    external{
-        settled=!settled;
-    }
 
-    function _settle(uint _optionId) external{
+    function settle(uint _optionId) 
+    external ownerOnly hasClosed notSettled {
         for (uint i = 0; i < shareOfSlice.length; i++) {
             address shareHolder = shareOfSlice[i];
             accounts.increaseToken(shareHolder, shareOf[shareHolder][_optionId]);
@@ -178,5 +173,29 @@ contract BinaryPrediction is BasePrediction,BaseModifier {
             accounts.increaseToken(poolHolder, income);
         }
         settled = true;
+        correct=_optionId;
+    }
+
+    function predictionInfo()
+    external view returns(
+        BinaryOption[] memory _options,
+        PredictionInfo memory _info,
+        uint _init_amount,
+        uint _totalShare,
+        uint _totalPool,
+        uint _equity,
+        address _owner,
+        bool _settled,
+        uint _correct
+        ){
+        _options= options;
+        _info=info;
+        _init_amount=init_amount;
+        _totalShare=totalShare;
+        _totalPool=totalPool;
+        _equity=equity;
+        _owner=owner;
+        _settled=settled;
+        _correct=correct;
     }
 }
