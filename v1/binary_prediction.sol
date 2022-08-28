@@ -161,16 +161,21 @@ contract BinaryPrediction is BasePrediction,BaseModifier {
     external ownerOnly hasClosed notSettled {
         for (uint i = 0; i < shareOfSlice.length; i++) {
             address shareHolder = shareOfSlice[i];
-            accounts.increaseToken(shareHolder, shareOf[shareHolder][_optionId]);
+            uint share=shareOf[shareHolder][_optionId];
+            if(share>0){
+                accounts.increaseToken(shareHolder, share);
+            }
         }
         for (uint i = 0; i < poolOfSlice.length; i++) {
             address poolHolder = poolOfSlice[i];
             uint pool = poolOf[poolHolder];
-            uint income = pool + equity * pool / totalPool;
-            if(poolHolder==owner){
-                income-=init_amount;
+            if(pool>0){
+                uint income = pool + equity * pool / totalPool;
+                if(poolHolder==owner){
+                    income-=init_amount;
+                }
+                accounts.increaseToken(poolHolder, income);
             }
-            accounts.increaseToken(poolHolder, income);
         }
         settled = true;
         correct=_optionId;
